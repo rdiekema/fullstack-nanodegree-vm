@@ -13,14 +13,31 @@ def connect():
 
 def deleteMatches():
     """Remove all the match records from the database."""
+    conn = connect()
+    c = conn.cursor()
+    c.execute("TRUNCATE TABLE results;")
+    conn.commit()
+    conn.close()
 
 
 def deletePlayers():
     """Remove all the player records from the database."""
+    conn = connect()
+    c = conn.cursor()
+    c.execute("TRUNCATE TABLE players;")
+    conn.commit()
+    conn.close()
 
 
 def countPlayers():
     """Returns the number of players currently registered."""
+    conn = connect()
+    c = conn.cursor()
+    c.execute("SELECT COUNT(id) FROM players;")
+    value = c.fetchone()[0]
+    conn.commit()
+    conn.close()
+    return value
 
 
 def registerPlayer(name):
@@ -32,6 +49,11 @@ def registerPlayer(name):
     Args:
       name: the player's full name (need not be unique).
     """
+    conn = connect()
+    c = conn.cursor()
+    c.execute("INSERT INTO players(fullname) VALUES(%s)", (name,))
+    conn.commit()
+    conn.close()
 
 
 def playerStandings():
@@ -47,6 +69,16 @@ def playerStandings():
         wins: the number of matches the player has won
         matches: the number of matches the player has played
     """
+    sql = "SELECT id, fullname, (SELECT COUNT(id) FROM results WHERE " \
+          "winner = p.id) as wins, (SELECT COUNT(id) FROM results WHERE " \
+          "winner = p.id OR loser = p.id) as matches FROM players p"
+    conn = connect()
+    c = conn.cursor()
+    c.execute(sql)
+    value = c.fetchall()
+    conn.commit()
+    conn.close()
+    return value
 
 
 def reportMatch(winner, loser):
@@ -56,8 +88,14 @@ def reportMatch(winner, loser):
       winner:  the id number of the player who won
       loser:  the id number of the player who lost
     """
- 
- 
+    conn = connect()
+    c = conn.cursor()
+    c.execute("INSERT INTO results(winner, loser) VALUES(%s, %s)",
+              (winner, loser))
+    conn.commit()
+    conn.close()
+
+
 def swissPairings():
     """Returns a list of pairs of players for the next round of a match.
   
@@ -73,5 +111,18 @@ def swissPairings():
         id2: the second player's unique id
         name2: the second player's name
     """
+    sql = "SELECT id, (SELECT COUNT(id) FROM results WHERE winner = p.id) as " \
+          "wins FROM players p ORDER BY wins DESC"
+    conn = connect()
+    c = conn.cursor()
+    c.execute(sql)
+    values = iter(c.fetchall())
 
-
+    pairings = set()
+    for i in values:
+        first = i
+        second = next(values)
+        pairings.add((first[0], first[1], second[0], second[1]))
+    conn.commit()
+    conn.close()
+    return pairings
