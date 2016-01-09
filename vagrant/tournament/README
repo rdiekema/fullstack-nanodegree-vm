@@ -1,0 +1,12 @@
+Navigate to the vagrant directory containing the tournament.sql file:
+~# cd /vagrant/tournament
+
+Execute the psql command:
+~# psql
+
+And import the database at the prompt:
+vagrant=> \i tournament.sql
+
+The database is now ready to go, and you now should run the test script:
+
+~# python tournament_test.py
